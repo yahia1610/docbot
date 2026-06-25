@@ -16,3 +16,7 @@ FOLLOWUP_BOOKING_WINDOW_DAYS = 30
 # Number of weeks ahead to generate time slots when a doctor schedule
 # is created/updated, or when the generate_slots management command runs.
 SLOT_GENERATION_WEEKS = 8
+
+# Number of hours after the scheduled appointment time before it is 
+# automatically marked as "No-show".
+NO_SHOW_HOURS = 2
