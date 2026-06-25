@@ -59,7 +59,7 @@
             <div class="col-md-6">
                 <label class="form-label">Start Time</label>
                 <input type="time" name="start_time" class="form-control" value="{{ schedule.start_time|time:'H:i' }}"
-                    min="10:00" required>
+                    required>
             </div>
             <div class="col-md-6">
                 <label class="form-label">End Time</label>
@@ -101,11 +101,7 @@
             const start = startTimeInput.value;
             const end = endTimeInput.value;
 
-            if (start && start < "10:00") {
-                e.preventDefault();
-                alert('Error: Appointments must start from 10:00 AM onwards.');
-                startTimeInput.classList.add('is-invalid');
-            } else if (start && end && start >= end) {
+            if (start && end && start >= end) {
                 e.preventDefault();
                 alert('Error: End time must be strictly after start time.');
                 endTimeInput.classList.add('is-invalid');
