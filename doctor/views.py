@@ -110,16 +110,21 @@ def _generate_slots_for_schedule(schedule):
 
 
 def _auto_update_missed_appointments():
+    from config.constants import NO_SHOW_HOURS
     now = timezone.now()
-    today = now.date()
+    cutoff_time = now - timedelta(hours=NO_SHOW_HOURS)
     
-    # 1. Booked -> No-show (if date passed)
+    # 1. Booked -> No-show (if date passed and hours exceeded)
     past_appointments = Doctorappointment.objects.filter(
         status='Booked',
-        appointment_date__lt=today
+        appointment_date__lte=now.date()
     )
-    if past_appointments.exists():
-        past_appointments.update(status='No-show', updated_at=now)
+    for appt in past_appointments:
+        appt_datetime = timezone.make_aware(datetime.combine(appt.appointment_date, appt.appointment_time))
+        if appt_datetime < cutoff_time:
+            appt.status = 'No-show'
+            appt.updated_at = now
+            appt.save(update_fields=['status', 'updated_at'])
 
     # 2. In progress -> Completed (if stuck for > 12 hours)
     twelve_hours_ago = now - timedelta(hours=12)
@@ -246,9 +251,7 @@ def schedule_add(request):
         start_time_str = request.POST.get('start_time')
         end_time_str = request.POST.get('end_time')
 
-        if start_time_str < "10:00":
-            messages.error(request, 'Error: Appointments must start from 10:00 AM onwards.')
-            return redirect('doctor_schedule_add')
+
 
         if start_time_str >= end_time_str:
             messages.error(request, 'Error: End time must be after start time.')
@@ -282,9 +285,7 @@ def schedule_edit(request, pk):
         start_time_str = request.POST.get('start_time')
         end_time_str = request.POST.get('end_time')
 
-        if start_time_str < "10:00":
-            messages.error(request, 'Error: Appointments must start from 10:00 AM onwards.')
-            return render(request, 'doctor/schedule_form.html', {'schedule': schedule, 'addresses': Doctoraddress.objects.filter(doctor=doctor)})
+
 
         if start_time_str >= end_time_str:
             messages.error(request, 'Error: End time must be after start time.')
@@ -772,9 +773,7 @@ def assistant_schedule_add(request):
         start_time_str = request.POST.get('start_time')
         end_time_str = request.POST.get('end_time')
 
-        if start_time_str < "10:00":
-            messages.error(request, 'Error: Appointments must start from 10:00 AM onwards.')
-            return redirect('assistant_schedule_add')
+
 
         if start_time_str >= end_time_str:
             messages.error(request, 'Error: End time must be after start time.')
@@ -808,9 +807,7 @@ def assistant_schedule_edit(request, pk):
         start_time_str = request.POST.get('start_time')
         end_time_str = request.POST.get('end_time')
 
-        if start_time_str < "10:00":
-            messages.error(request, 'Error: Appointments must start from 10:00 AM onwards.')
-            return render(request, 'doctor/schedule_form.html', {'schedule': schedule, 'addresses': Doctoraddress.objects.filter(doctor=doctor), 'is_assistant': True})
+
 
         if start_time_str >= end_time_str:
             messages.error(request, 'Error: End time must be after start time.')
