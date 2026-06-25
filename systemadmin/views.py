@@ -480,10 +480,7 @@ def admin_doctor_schedule_add(request, username):
         # Verify address belongs to doctor
         address = get_object_or_404(Doctoraddress, pk=doctor_address_id, doctor=doctor)
 
-        # Validate times (must start from 10:00 AM onwards)
-        if start_time_str < "10:00":
-            messages.error(request, 'Error: Appointments must start from 10:00 AM onwards.')
-            return redirect('admin_doctor_schedules', username=username)
+
 
         if start_time_str >= end_time_str:
             messages.error(request, 'Error: End time must be after start time.')
