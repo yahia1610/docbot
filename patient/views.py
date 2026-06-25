@@ -25,16 +25,22 @@ from systemadmin.models import Measurementtypes, Inheritablediseases
 
 
 def _auto_update_missed_appointments():
+    from config.constants import NO_SHOW_HOURS
+    from datetime import datetime
     now = timezone.now()
-    today = now.date()
+    cutoff_time = now - timedelta(hours=NO_SHOW_HOURS)
     
-    # 1. Booked -> No-show (if date passed)
+    # 1. Booked -> No-show (if date passed and hours exceeded)
     past_appointments = Doctorappointment.objects.filter(
         status='Booked',
-        appointment_date__lt=today
+        appointment_date__lte=now.date()
     )
-    if past_appointments.exists():
-        past_appointments.update(status='No-show', updated_at=now)
+    for appt in past_appointments:
+        appt_datetime = timezone.make_aware(datetime.combine(appt.appointment_date, appt.appointment_time))
+        if appt_datetime < cutoff_time:
+            appt.status = 'No-show'
+            appt.updated_at = now
+            appt.save(update_fields=['status', 'updated_at'])
 
     # 2. In progress -> Completed (if stuck for > 12 hours)
     twelve_hours_ago = now - timedelta(hours=12)
@@ -768,7 +774,7 @@ def book_appointment(request, doctor_id):
     available_slots = None
 
     if selected_address:
-        limit_datetime = timezone.localtime(timezone.now()) + timedelta(hours=1)
+        limit_datetime = timezone.localtime(timezone.now()) + timedelta(minutes=30)
         limit_date = limit_datetime.date()
         limit_time = limit_datetime.time()
         available_slots = Doctortimeslot.objects.filter(
@@ -843,7 +849,7 @@ def book_followup(request, doctor_id, appointment_id):
     available_slots = None
 
     if selected_address:
-        limit_datetime = timezone.localtime(timezone.now()) + timedelta(hours=1)
+        limit_datetime = timezone.localtime(timezone.now()) + timedelta(minutes=30)
         limit_date = limit_datetime.date()
         limit_time = limit_datetime.time()
         available_slots = Doctortimeslot.objects.filter(
